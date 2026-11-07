@@ -1,0 +1,35 @@
+/* Paper Companion */
+
+.pc-suggestion {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	padding: var(--size-4-1) 0;
+}
+
+.pc-suggestion-title {
+	font-weight: var(--font-medium);
+}
+
+.pc-suggestion-meta {
+	color: var(--text-muted);
+	font-size: var(--font-ui-small);
+}
+
+.pc-suggestion-abstract {
+	color: var(--text-faint);
+	font-size: var(--font-ui-smaller);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.pc-modal-help {
+	color: var(--text-muted);
+	font-size: var(--font-ui-small);
+	margin: 0 0 var(--size-4-3);
+}
+
+.pc-modal-input {
+	width: 100%;
+}
