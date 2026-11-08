@@ -1,6 +1,6 @@
 {
   "name": "paper-companion",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Search your Zotero library by meaning, create literature notes, and get page-cited reading notes and answers from a local model.",
   "main": "main.js",
   "private": true,
