@@ -20,7 +20,7 @@ export class PaperCompanionSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName("Local API URL")
-			.setDesc("Zotero 7+ serves a read-only API at this address when Settings → Advanced → \"Allow other applications on this computer to communicate with Zotero\" is on.")
+			.setDesc("Zotero 7+ serves a read-only API at this address when Settings → Advanced → \"Allow other applications on this computer to communicate with Zotero\" is on. Keep 127.0.0.1 unless Zotero runs elsewhere.")
 			.addText((t) =>
 				t.setPlaceholder(DEFAULT_SETTINGS.zoteroApiUrl).setValue(s.zoteroApiUrl).onChange(async (v) => {
 					s.zoteroApiUrl = v.trim() || DEFAULT_SETTINGS.zoteroApiUrl;
@@ -30,7 +30,12 @@ export class PaperCompanionSettingTab extends PluginSettingTab {
 			.addButton((b) =>
 				b.setButtonText("Test").onClick(async () => {
 					const ok = await this.plugin.zotero.available();
-					new Notice(ok ? `Zotero answered at ${this.plugin.zotero.baseUrl}.` : `No Zotero at ${this.plugin.zotero.baseUrl}. Start Zotero and enable "Allow other applications on this computer to communicate with Zotero" (Settings → Advanced), or set an export file below.`, 10000);
+					new Notice(
+						ok
+							? `Zotero answered at ${this.plugin.zotero.baseUrl}.`
+							: `No Zotero at ${this.plugin.zotero.baseUrl}. Start Zotero 7 or later and enable "Allow other applications on this computer to communicate with Zotero" (Settings → Advanced), or set an export file below.`,
+						10000,
+					);
 				}),
 			);
 

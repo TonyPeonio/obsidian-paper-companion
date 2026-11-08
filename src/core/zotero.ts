@@ -1,8 +1,10 @@
-// Zotero client over the local API that Zotero 7+ serves at http://localhost:23119/api/
+// Zotero client over the local API that Zotero 7+ serves at http://127.0.0.1:23119/api/
 // when "Allow other applications on this computer to communicate with Zotero" is enabled
 // (Settings → Advanced). It mirrors the Web API v3 with the personal library addressed as
 // `users/0`: /items/top, /items (itemType filters), /collections, pagination with
-// `limit`/`start` and a `Total-Results` header. Read-only here.
+// `limit`/`start` and a `Total-Results` header. Read-only here. The transport must send no
+// Origin header (Zotero closes the connection on one), which is why the plugin wires Node's
+// http module rather than Obsidian's requestUrl; see ../node-http.ts.
 
 import { PAPER_TYPES, type PaperItem } from "./catalog";
 import { header, type HttpRequest } from "./http";
@@ -39,7 +41,7 @@ export class ZoteroClient {
 	) {}
 
 	get baseUrl(): string {
-		return this.getBaseUrl().trim().replace(/\/+$/, "") || "http://localhost:23119";
+		return this.getBaseUrl().trim().replace(/\/+$/, "") || "http://127.0.0.1:23119";
 	}
 
 	/** True when the local API answers. */
@@ -114,7 +116,9 @@ export class ZoteroClient {
 		try {
 			res = await this.http({ url, method: "GET", headers: { Accept: "application/json" } });
 		} catch (err) {
-			throw new ZoteroError(`Cannot reach Zotero at ${this.baseUrl}: ${(err as Error).message}. Is Zotero running with "Allow other applications on this computer to communicate with Zotero" enabled (Settings → Advanced)?`);
+			throw new ZoteroError(
+				`Cannot reach Zotero at ${this.baseUrl}: ${(err as Error).message}. Zotero 7 or later must be running with "Allow other applications on this computer to communicate with Zotero" enabled (Settings → Advanced). If it is, try http://127.0.0.1:23119 as the URL, or set an export file instead.`,
+			);
 		}
 		if (res.status >= 400) throw new ZoteroError(`Zotero returned HTTP ${res.status} for ${url}: ${res.text.slice(0, 200)}`, res.status);
 		return res;

@@ -14,7 +14,7 @@ Pairs with [Local Vault Agent](https://github.com/TonyPeonio/obsidian-local-vaul
 
 Desktop Obsidian (the plugin reads PDFs from the Zotero storage folder on disk).
 
-1. **Zotero 7 or later** with its local API on: Zotero → *Settings → Advanced* → tick **"Allow other applications on this computer to communicate with Zotero"**. The API answers at `http://localhost:23119/api/` (read-only, no token) while Zotero is running.
+1. **Zotero 7 or later** with its local API on: Zotero → *Settings → Advanced* → tick **"Allow other applications on this computer to communicate with Zotero"**. The API answers at `http://127.0.0.1:23119/api/` (read-only, no token) while Zotero is running.
    Without it, export your library once as *CSL JSON* (or let [Better BibTeX](https://retorque.re/zotero-better-bibtex/) auto-export *Better BibTeX JSON*) and point the plugin at that file.
 2. **Ollama** with a chat model and an embedding model:
    ```
@@ -50,13 +50,25 @@ Desktop Obsidian (the plugin reads PDFs from the Zotero storage folder on disk).
 
 **Notes.** Only the *Reading notes* and *Q&A* sections are managed; everything else in a literature note is yours. A note is matched to its paper by the `zotero_key` in its frontmatter, so renaming the file is fine.
 
+## Works well with Zotero Integration
+
+If you already use the [Zotero Integration](https://github.com/mgmeyers/obsidian-zotero-integration) plugin, keep it: it is the best tool for picking citations while you write and for importing items with your own templates (annotations, colour-coded highlights, and so on), and it needs Better BibTeX in Zotero. Paper Companion does not replace it; it adds the parts that need a local model:
+
+- **finding** a paper by what it is about rather than by its title, across the whole library;
+- **reading notes and answers** drawn from the PDF itself, with page numbers;
+- **related papers** to the note you have open.
+
+The two share notes. A literature note imported by Zotero Integration whose frontmatter has a `citekey` is recognised by Paper Companion (as long as Zotero provides citation keys, which Better BibTeX does), so *Write reading notes* and *Ask this paper* work on it and add their sections without touching the rest. Notes created by Paper Companion carry `citation_key` and `zotero_key` in the same way. Install both, or Paper Companion alone if you only want search and reading notes.
+
 ## Privacy and network use
 
-Two local HTTP endpoints only: Zotero's local API (`http://localhost:23119`) and the Ollama URL you set (`http://localhost:11434` by default). No telemetry, no accounts. If you point Ollama at another machine on your LAN, abstracts, PDF text and your questions go to that machine.
+Two local HTTP endpoints only: Zotero's local API (`http://127.0.0.1:23119`, called through Node's HTTP module because Zotero refuses requests that carry a browser `Origin` header, which Obsidian's own request function adds) and the Ollama URL you set (`http://localhost:11434` by default). No telemetry, no accounts. If you point Ollama at another machine on your LAN, abstracts, PDF text and your questions go to that machine.
 
 ## If Zotero is not detected
 
-- Zotero must be running, version 7 or later, with *Allow other applications on this computer to communicate with Zotero* enabled; the plugin's *Test* button reports what it gets.
+- Zotero must be running, version 7 or later, with *Allow other applications on this computer to communicate with Zotero* enabled; the plugin's *Test* button reports what it gets. Zotero 6 has no local API.
+- The URL should be `http://127.0.0.1:23119`. Zotero listens on IPv4 only, so `localhost` can fail on machines where it resolves to `::1` first; 0.1.0 used `localhost` and is switched over automatically.
+- A quick check from a terminal: `curl http://127.0.0.1:23119/api/users/0/items?limit=1` should print JSON. If that works and the plugin still cannot connect, report it with the plugin version: the plugin deliberately avoids Obsidian's request function, which Zotero rejects because of its `Origin` header.
 - The port is 23119 by default; a different Zotero build may use another. Set the URL in settings.
 - As a fallback, export the library to CSL JSON (File → Export Library → CSL JSON) or use Better BibTeX's auto-export, and enter the file path. PDFs are then found only when the export carries their paths (Better BibTeX JSON does).
 

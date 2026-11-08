@@ -10,6 +10,7 @@ import { extractPdfPages, type PdfJsLike } from "./core/pdf";
 import { askMessages, budgetPages, hasPageCitations, readingNotesMessages } from "./core/reading";
 import { attachPdfs, ZoteroClient, ZoteroError } from "./core/zotero";
 import { FindPapersModal, QuestionModal } from "./modals";
+import { nodeHttpAvailable, nodeRequest } from "./node-http";
 import { DEFAULT_SETTINGS, type PaperCompanionSettings } from "./settings";
 import { PaperCompanionSettingTab } from "./settings-tab";
 
@@ -33,10 +34,13 @@ export default class PaperCompanionPlugin extends Plugin {
 
 	async onload(): Promise<void> {
 		await this.loadAll();
-		this.http = async (opts) => {
+		const viaRequestUrl: HttpRequest = async (opts) => {
 			const res = await requestUrl({ url: opts.url, method: opts.method ?? "GET", headers: opts.headers, body: opts.body, contentType: opts.contentType, throw: false });
 			return { status: res.status, headers: res.headers, text: res.text, arrayBuffer: res.arrayBuffer };
 		};
+		// Zotero closes the connection on any request with an Origin header, and requestUrl
+		// sends one (app://obsidian.md). Node's http sends none; this plugin is desktop-only.
+		this.http = nodeHttpAvailable() ? nodeRequest : viaRequestUrl;
 		this.zotero = new ZoteroClient(() => this.settings.zoteroApiUrl, this.http);
 		this.ollama = new OllamaClient(
 			() => this.settings.ollamaUrl,
@@ -88,6 +92,8 @@ export default class PaperCompanionPlugin extends Plugin {
 	private async loadAll(): Promise<void> {
 		const data = ((await this.loadData()) ?? {}) as SavedData;
 		this.settings = { ...DEFAULT_SETTINGS, ...(data.settings ?? {}) };
+		// 0.1.0 defaulted to "localhost", which can resolve to ::1 while Zotero listens on IPv4.
+		if (this.settings.zoteroApiUrl === "http://localhost:23119") this.settings.zoteroApiUrl = DEFAULT_SETTINGS.zoteroApiUrl;
 		if (data.catalog?.version === 1) this.catalog = data.catalog;
 		if (data.index?.version === 1) this.index = data.index;
 	}
@@ -227,7 +233,12 @@ export default class PaperCompanionPlugin extends Plugin {
 
 	private zoteroKeyOf(file: TFile): string | undefined {
 		const fm = this.app.metadataCache.getFileCache(file)?.frontmatter;
-		return typeof fm?.zotero_key === "string" ? fm.zotero_key : undefined;
+		if (typeof fm?.zotero_key === "string") return fm.zotero_key;
+		// Notes written by the Zotero Integration plugin carry `citekey` (this plugin writes
+		// `citation_key`); either one identifies the paper when Zotero provides citation keys.
+		const citekey = typeof fm?.citekey === "string" ? fm.citekey : typeof fm?.citation_key === "string" ? fm.citation_key : undefined;
+		if (!citekey) return undefined;
+		return Object.values(this.catalog.items).find((item) => item.citationKey === citekey)?.key;
 	}
 
 	/** The open note when it is a literature note with a catalog entry. */

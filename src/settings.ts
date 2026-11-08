@@ -19,7 +19,8 @@ export interface PaperCompanionSettings {
 
 export const DEFAULT_SETTINGS: PaperCompanionSettings = {
 	zoteroDataDir: "~/Zotero",
-	zoteroApiUrl: "http://localhost:23119",
+	// 127.0.0.1 rather than localhost: Zotero listens on IPv4 only, and "localhost" may try ::1 first.
+	zoteroApiUrl: "http://127.0.0.1:23119",
 	linkedAttachmentBaseDir: "",
 	exportFilePath: "",
 	notesFolder: "Papers",
