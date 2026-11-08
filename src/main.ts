@@ -45,8 +45,8 @@ export default class PaperCompanionPlugin extends Plugin {
 		this.ollama = new OllamaClient(
 			() => this.settings.ollamaUrl,
 			undefined,
-			async (url, body) => {
-				const res = await requestUrl({ url, method: "POST", contentType: "application/json", body, throw: false });
+			async (url, body, method) => {
+				const res = await requestUrl(method === "GET" ? { url, method, throw: false } : { url, method, contentType: "application/json", body, throw: false });
 				return { status: res.status, text: res.text };
 			},
 		);
