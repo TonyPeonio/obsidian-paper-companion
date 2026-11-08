@@ -107,7 +107,7 @@ No title, no preamble, no closing remarks.${pages.truncated ? "\nOnly some pages
 
 export function askMessages(item: PaperItem, pages: PageBudget, question: string): ChatMessage[] {
 	const system = `You answer questions about one research paper from its pages, each starting with a marker like "=== Page 7 ===".
-Answer in markdown, concisely, and support every statement with a page citation [p. N] taken from the markers. If the pages do not contain the answer, say so plainly instead of guessing.${pages.truncated ? " Only some pages were provided." : ""}`;
+Answer in markdown, concisely, and support every statement with a page citation [p. N] taken from the markers. When asked for a quote, passage, definition or exact wording, copy the sentence(s) verbatim from the page in quotation marks, then the citation; never paraphrase a quote. If the pages do not contain the answer, say so plainly instead of guessing.${pages.truncated ? " Only some pages were provided." : ""}`;
 	const user = `${paperHeader(item)}\n\n${pages.text}\n\nQuestion: ${question.trim()}`;
 	return [
 		{ role: "system", content: system },
