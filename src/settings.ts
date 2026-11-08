@@ -9,6 +9,8 @@ export interface PaperCompanionSettings {
 	exportFilePath: string;
 	/** Folder for literature notes. */
 	notesFolder: string;
+	/** How many top-ranked papers "Find quotes across papers" reads per question. */
+	quoteSearchPapers: number;
 	ollamaUrl: string;
 	chatModel: string;
 	embeddingModel: string;
@@ -24,6 +26,7 @@ export const DEFAULT_SETTINGS: PaperCompanionSettings = {
 	linkedAttachmentBaseDir: "",
 	exportFilePath: "",
 	notesFolder: "Papers",
+	quoteSearchPapers: 5,
 	ollamaUrl: "http://localhost:11434",
 	chatModel: "qwen3.5:9b",
 	embeddingModel: "nomic-embed-text",

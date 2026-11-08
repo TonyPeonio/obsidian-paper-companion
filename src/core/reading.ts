@@ -74,7 +74,7 @@ export function budgetPages(pages: string[], numCtx: number, reserveTokens = RES
 	return { text, pagesIncluded: included.map((i) => i + 1), truncated };
 }
 
-function paperHeader(item: PaperItem): string {
+export function paperHeader(item: PaperItem): string {
 	return [`Title: ${item.title}`, item.creators.length ? `Authors: ${item.creators.join("; ")}` : "", item.year ? `Year: ${item.year}` : "", item.doi ? `DOI: ${item.doi}` : ""].filter(Boolean).join("\n");
 }
 

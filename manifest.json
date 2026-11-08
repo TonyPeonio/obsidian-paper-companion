@@ -1,7 +1,7 @@
 {
 	"id": "paper-companion",
 	"name": "Paper Companion",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"minAppVersion": "1.7.2",
 	"description": "Search your Zotero library by meaning, create literature notes, and get page-cited reading notes and answers about any paper from a local model (Ollama).",
 	"author": "Tony Peonio",

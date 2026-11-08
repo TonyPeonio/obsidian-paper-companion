@@ -53,6 +53,8 @@ export class QuestionModal extends Modal {
 	constructor(
 		app: App,
 		private title: string,
+		private heading = "Ask this paper",
+		private placeholder = "What dataset did they evaluate on, and how large was it?",
 	) {
 		super(app);
 		this.result = new Promise((res) => (this.resolve = res));
@@ -60,10 +62,10 @@ export class QuestionModal extends Modal {
 
 	onOpen(): void {
 		const { contentEl, titleEl } = this;
-		titleEl.setText("Ask this paper");
+		titleEl.setText(this.heading);
 		contentEl.createEl("p", { cls: "pc-modal-help", text: this.title });
 		new Setting(contentEl).setName("Question").addText((t) => {
-			t.setPlaceholder("What dataset did they evaluate on, and how large was it?");
+			t.setPlaceholder(this.placeholder);
 			t.onChange((v) => (this.value = v));
 			t.inputEl.addClass("pc-modal-input");
 			t.inputEl.addEventListener("keydown", (e) => {

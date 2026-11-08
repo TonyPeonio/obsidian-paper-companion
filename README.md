@@ -29,6 +29,7 @@ Desktop Obsidian (the plugin reads PDFs from the Zotero storage folder on disk).
 2. Run **Sync Zotero library** (first time: a Notice counts the papers being embedded; later syncs only embed what changed).
 3. Click the book icon or run **Find papers**. Type what you are looking for; press Enter on a result to open its literature note (created under `Papers/` if it does not exist yet).
 4. With a literature note open: **Write reading notes** fills the *Reading notes* section from the PDF; **Ask this paper** answers a question under *Q&A*. Your *My notes* section is never touched.
+5. **Find quotes across papers** asks one question of the whole library and collects verbatim passages with page numbers from the top papers into a note (see *Finding quotes*).
 
 ### Commands
 
@@ -39,6 +40,14 @@ Desktop Obsidian (the plugin reads PDFs from the Zotero storage folder on disk).
 | Related papers to this note | Ranks the library against the open note's text |
 | Write reading notes | Page-cited Claim / Method / Data / Results / Limitations / Key terms / Related work from the PDF |
 | Ask this paper | A question answered from the PDF with page citations, appended under Q&A |
+| Find quotes across papers | One question, the top papers by meaning, and the verbatim passages from each PDF with page numbers, in one note under `Papers/Quotes/` |
+
+### Finding quotes
+
+Two ways, depending on whether you know which paper:
+
+- **One paper:** open its literature note and run **Ask this paper** with a request for wording, such as "Quote the sentence where they define the loss" or "What exact phrase do they use for the main claim?". The answer copies the sentence verbatim in quotation marks with its page.
+- **Across the library:** run **Find quotes across papers** and ask the question. The plugin ranks your papers by meaning, reads the top ones (5 by default, a setting), asks the model for the passages in each PDF that bear on the question, and writes one note: a section per paper, each quote as a blockquote with a link to the paper's literature note and the page, papers with nothing relevant listed at the end. Quotes are copied by a model, so check the page before you cite one; the note says so.
 
 ## How it works
 

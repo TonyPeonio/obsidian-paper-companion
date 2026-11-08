@@ -81,6 +81,17 @@ export class PaperCompanionSettingTab extends PluginSettingTab {
 				}),
 			);
 
+		new Setting(containerEl)
+			.setName("Papers read per quote search")
+			.setDesc("Find quotes across papers ranks the library by your question and reads this many PDFs. Each paper takes a model call; 5 is a good start, 10 on a fast GPU.")
+			.addText((t) =>
+				t.setPlaceholder(String(DEFAULT_SETTINGS.quoteSearchPapers)).setValue(String(s.quoteSearchPapers)).onChange(async (v) => {
+					const n = Math.round(Number(v));
+					s.quoteSearchPapers = Number.isFinite(n) && n >= 1 && n <= 30 ? n : DEFAULT_SETTINGS.quoteSearchPapers;
+					await save();
+				}),
+			);
+
 		new Setting(containerEl).setName("Model (Ollama)").setHeading();
 
 		new Setting(containerEl)

@@ -8,6 +8,7 @@ import { appendQA, mergeLiteratureNote, noteBaseName, renderLiteratureNote, repl
 import { OllamaClient, OllamaError } from "./core/ollama";
 import { extractPdfPages, type PdfJsLike } from "./core/pdf";
 import { askMessages, budgetPages, hasPageCitations, readingNotesMessages } from "./core/reading";
+import { parseQuotes, quoteSearchFileName, quotesMessages, renderQuoteSearch, type QuoteHit } from "./core/quotes";
 import { attachPdfs, ZoteroClient, ZoteroError } from "./core/zotero";
 import { FindPapersModal, QuestionModal } from "./modals";
 import { nodeHttpAvailable, nodeRequest } from "./node-http";
@@ -55,6 +56,7 @@ export default class PaperCompanionPlugin extends Plugin {
 		this.addRibbonIcon("book-open", "Find papers", () => this.findPapers());
 		this.addCommand({ id: "sync-library", name: "Sync Zotero library", callback: () => void this.syncLibrary() });
 		this.addCommand({ id: "find-papers", name: "Find papers", callback: () => this.findPapers() });
+		this.addCommand({ id: "find-quotes", name: "Find quotes across papers", callback: () => void this.findQuotes() });
 		this.addCommand({
 			id: "related-papers",
 			name: "Related papers to this note",
@@ -280,27 +282,83 @@ export default class PaperCompanionPlugin extends Plugin {
 
 	// ---------------------------------------------------------------- reading
 
-	private async pagesFor(file: TFile, item: PaperItem): Promise<{ pages: string[]; numPages: number } | null> {
-		const fm = this.app.metadataCache.getFileCache(file)?.frontmatter;
-		const pdfPath = typeof fm?.pdf === "string" && fm.pdf ? fm.pdf : item.pdfPath;
-		if (!pdfPath) {
-			new Notice(`No PDF is known for "${item.title}". Attach one in Zotero and sync again, or add a "pdf" field with the file path to this note's frontmatter.`, 12000);
-			return null;
-		}
+	/** The PDF's pages, or the reason it cannot be read (for a Notice or a results note). */
+	private async readPdf(pdfPath: string | undefined, title: string): Promise<{ pages: string[]; numPages: number } | { error: string }> {
+		if (!pdfPath) return { error: `No PDF is known for "${title}". Attach one in Zotero and sync again, or add a "pdf" field with the file path to its note's frontmatter.` };
 		let bytes: Uint8Array;
 		try {
 			bytes = new Uint8Array(await readFile(expandHome(pdfPath)));
 		} catch (err) {
-			new Notice(`Cannot read the PDF at ${expandHome(pdfPath)}: ${(err as Error).message}. Check the Zotero data directory setting.`, 12000);
-			return null;
+			return { error: `Cannot read the PDF at ${expandHome(pdfPath)}: ${(err as Error).message}. Check the Zotero data directory setting.` };
 		}
 		const pdfjs = (await loadPdfJs()) as PdfJsLike;
 		const extracted = await extractPdfPages(bytes, pdfjs);
-		if (extracted.pages.every((p) => p.trim().length === 0)) {
-			new Notice("The PDF has no extractable text (a scan without OCR).", 10000);
+		if (extracted.pages.every((p) => p.trim().length === 0)) return { error: "The PDF has no extractable text (a scan without OCR)." };
+		return extracted;
+	}
+
+	private async pagesFor(file: TFile, item: PaperItem): Promise<{ pages: string[]; numPages: number } | null> {
+		const fm = this.app.metadataCache.getFileCache(file)?.frontmatter;
+		const pdfPath = typeof fm?.pdf === "string" && fm.pdf ? fm.pdf : item.pdfPath;
+		const result = await this.readPdf(pdfPath, item.title);
+		if ("error" in result) {
+			new Notice(result.error, 12000);
 			return null;
 		}
-		return extracted;
+		return result;
+	}
+
+	/** One question, the top papers by meaning, verbatim passages with pages from each PDF, in one note. */
+	async findQuotes(): Promise<void> {
+		const total = Object.keys(this.catalog.items).length;
+		if (total === 0) {
+			new Notice("The library is empty. Run \"Sync Zotero library\" first.", 8000);
+			return;
+		}
+		const modal = new QuestionModal(this.app, `Ranks your ${total} papers by meaning, reads the top ${this.settings.quoteSearchPapers} PDFs and collects the passages that answer the question, with page numbers.`, "Find quotes across papers", "How is attention defined, in their own words?");
+		modal.open();
+		const question = await modal.result;
+		if (!question) return;
+		const ranked = (await this.rank(question, Math.max(this.settings.quoteSearchPapers * 3, 10))).filter((r) => r.item.pdfPath).slice(0, this.settings.quoteSearchPapers);
+		if (ranked.length === 0) {
+			new Notice("No ranked paper has a PDF the plugin can read. Attach PDFs in Zotero and sync again.", 10000);
+			return;
+		}
+		const notice = new Notice("", 0);
+		const hits: QuoteHit[] = [];
+		const think = this.settings.thinking === "auto" ? undefined : this.settings.thinking === "on";
+		for (const [i, { item }] of ranked.entries()) {
+			notice.setMessage(`Quotes: reading paper ${i + 1} of ${ranked.length} with ${this.settings.chatModel}: ${item.title.slice(0, 60)}…`);
+			const noteLink = this.noteFor(item).path.replace(/\.md$/, "");
+			const pdf = await this.readPdf(item.pdfPath, item.title);
+			if ("error" in pdf) {
+				hits.push({ item, noteLink, quotes: [], pagesSeen: 0, numPages: 0, error: pdf.error });
+				continue;
+			}
+			const budget = budgetPages(pdf.pages, this.settings.numCtx);
+			try {
+				const reply = await this.ollama.chat({
+					model: this.settings.chatModel,
+					messages: quotesMessages(item, budget, question),
+					options: { num_ctx: this.settings.numCtx, temperature: 0.1 },
+					think,
+					keep_alive: "10m",
+				});
+				hits.push({ item, noteLink, quotes: parseQuotes(reply), pagesSeen: budget.pagesIncluded.length, numPages: pdf.numPages });
+			} catch (err) {
+				hits.push({ item, noteLink, quotes: [], pagesSeen: budget.pagesIncluded.length, numPages: pdf.numPages, error: this.describeModelError(err) });
+			}
+		}
+		notice.hide();
+		const folder = normalizePath(`${this.settings.notesFolder}/Quotes`);
+		if (!this.app.vault.getAbstractFileByPath(folder)) await this.app.vault.createFolder(folder);
+		const path = normalizePath(`${folder}/${quoteSearchFileName(question)}.md`);
+		const content = renderQuoteSearch(question, hits, { model: this.settings.chatModel, date: today(), libraryLabel: `${total} papers` });
+		const existing = this.app.vault.getAbstractFileByPath(path);
+		const file = existing instanceof TFile ? (await this.app.vault.modify(existing, content), existing) : await this.app.vault.create(path, content);
+		await this.app.workspace.getLeaf(false).openFile(file);
+		const found = hits.filter((h) => h.quotes.length).length;
+		new Notice(found ? `Quotes from ${found} of ${hits.length} papers written to ${path}.` : `No relevant passage in the ${hits.length} papers read; the note lists what was tried.`, 10000);
 	}
 
 	private describeModelError(err: unknown): string {
