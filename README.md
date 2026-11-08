@@ -8,7 +8,7 @@ An [Obsidian](https://obsidian.md) plugin for researchers and students with a [Z
 - **Ask this paper.** One question, one page-cited answer, appended under *Q&A*.
 - **No accounts, no keys, no uploads.** Zotero's local API is read without a token; Ollama is on localhost by default.
 
-Pairs with [Local Vault Agent](https://github.com/TonyPeonio/obsidian-local-vault-agent), which can search and compile across the literature notes this plugin writes, and with [Lecture Companion](https://github.com/TonyPeonio/obsidian-lecture-companion).
+Paper Companion is part of the Companion suite of local-first Obsidian plugins by Tony Peonio for students and researchers: your machine does the work, every change is a diff you approve, and the numbers are published. The others are Local Vault Agent (local Ollama agent that searches, compiles, edits notes), Lecture Companion (live local lecture transcription, Canvas slides, Ollama summaries), Canvas Companion (Canvas LMS assignments, grades and announcements as notes), Exam Companion (day-by-day study plan, daily quizzes and flashcards), Research Log Companion (append-only lab notebook with git, parameters, data hashes), Meeting Companion (local meeting transcription, decisions, action items, weekly digest), Job Hunt Companion (job applications as notes, resume tailoring, interview questions), Fellowship Companion (grants and fellowships: deadlines, materials, letters, eligibility), Code Companion (commits in the daily note, weekly report, TODOs), Teaching Companion (local-model rubric grading with verbatim evidence) and Branching Table of Contents (parent/child properties as a rooted family tree). All at [github.com/TonyPeonio](https://github.com/TonyPeonio).
 
 ## Requirements
 
